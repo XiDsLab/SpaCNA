@@ -146,6 +146,23 @@ get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_d
   cnv_state<-expr
   
   ### hmrf by segmentations
+get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_df, beta_fixed='au',beta_default=1, max_iter=5,update_gaussian=FALSE){
+  t1 <- Sys.time()
+  n_spot <- ncol(expr)
+  n_state <- ncol(mus_df)-1
+  
+  breaks_union<-sort(breaks_union)
+  breaks_union[length(breaks_union)]<-breaks_union[length(breaks_union)]+1
+  n_break<-length(breaks_union)
+  emission_prob_mat <- emission_probs_matrix(expr, mus_df, sigmas_df)
+  cnv_state_init <- apply(emission_prob_mat, c(1,2), which.max)
+  if (any(is.na(cnv_state_init))) {
+    print("cnv_state_init contains NA values!")
+}
+
+  cnv_state<-expr
+  
+  ### hmrf by segmentations
   for (k in c(1:(n_break-1))){
     starts<-breaks_union[k]
     ends<-breaks_union[k+1]-1
@@ -159,6 +176,8 @@ get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_d
 
     #print(R)
     R_last <- R + 1
+    mus_df_=mus_df
+    sigmas_df_=sigmas_df
     
     if (beta_fixed=='au'){
       beta <- get_beta_seg(R, neigh_list)
@@ -196,6 +215,19 @@ get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_d
       }else{
         beta=beta_fixed
       }
+
+    if(update_gaussian){
+      for(state in 1:n_state){
+        if(sum(R[1,] == state) < 10){
+          next
+        }
+        tmp <- data[R == state]
+        mus_df_[, state+1]  <- mean(tmp)
+        sigmas_df_[, state+1] <- sd(tmp)
+      }
+      emission_prob_seg <- emission_probs_matrix(data, mus_df_, sigmas_df_)
+    
+    }
     }
     cnv_state[starts:ends,]<-R
     # print(paste0('inter ',i))
@@ -205,6 +237,7 @@ get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_d
   print(paste0('used ',difftime(t2, t1, units = "mins"),' mins to do hmrf'))
   return(cnv_state)
 }
+
 
 
 calculate_CNV<- function(norm_count, baseline, 

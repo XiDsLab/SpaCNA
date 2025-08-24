@@ -1,9 +1,9 @@
-source("./code/utils.R")
-source("./code/downstream.R")
-source("./code/normalize.R")
-source("./code/hrmf_em.R")
-source("./code/hrmf_init.R")
-source("./code/image_tools.R")
+source("./utils_codes/utils.R")
+source("./utils_codes/downstream.R")
+source("./utils_codes/normalize.R")
+source("./utils_codes/hrmf_em.R")
+source("./utils_codes/hrmf_init.R")
+source("./utils_codes/image_tools.R")
 #' Add edge score for 
 #
 # This function calculates an edge score for each spot based on emission probabilities

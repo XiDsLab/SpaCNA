@@ -1,9 +1,9 @@
-source("./code/utils.R")
-source("./code/downstream.R")
-source("./code/normalize.R")
-source("./code/hrmf_em.R")
-source("./code/hrmf_init.R")
-source("./code/image_tools.R")
+source("./utils_codes/utils.R")
+source("./utils_codes/downstream.R")
+source("./utils_codes/normalize.R")
+source("./utils_codes/hrmf_em.R")
+source("./utils_codes/hrmf_init.R")
+source("./utils_codes/image_tools.R")
 # Estimate tumor content using Cell2location and SpaCNA
 # @param sample_dir Directory of the sample data (contains `seurat_object.rds`).
 #   - `seurat_object.rds`: A Seurat object.

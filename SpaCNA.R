@@ -1,9 +1,9 @@
-source("./code/utils.R")
-source("./code/downstream.R")
-source("./code/normalize.R")
-source("./code/hrmf_em.R")
-source("./code/hrmf_init.R")
-source("./code/image_tools.R")
+source("./utils_codes/utils.R")
+source("./utils_codes/downstream.R")
+source("./utils_codes/normalize.R")
+source("./utils_codes/hrmf_em.R")
+source("./utils_codes/hrmf_init.R")
+source("./utils_codes/image_tools.R")
 # Spatial CNA Analysis Pipeline
 
 #
@@ -38,6 +38,8 @@ source("./code/image_tools.R")
 # @param state_ratio Copy number state ratios (default: c(0.5, 1, 1.5)).
 # @param max_iter Maximum iterations for HMRF (default: 5).
 # @param beta_fixed Beta parameter for HMRF (default: 5).
+# @param update_gaussian Logical. Whether to update the mean and standard deviation of the Gaussian distribution.
+
 # @param tumor_perc Numeric vector indicating the tumor fraction for spots. 
 #   This can be estimated using SpaCNA's downstream module. Defaults to 1 for all spots.
 #
@@ -54,7 +56,8 @@ SpaCNA <- function(sample_dir,
                    state_ratio = c(0.5,1,1.5),
                    max_iter = 5,
                    beta_fixed = 5,
-                   tumor_perc=1) {
+                   tumor_perc=1,
+                   update_gaussian=FALSE) {
 
     # load object
     obj <- readRDS(paste0(sample_dir,"seurat_object.rds"))
@@ -163,7 +166,8 @@ SpaCNA <- function(sample_dir,
                                 mus_df=mus_df,
                                 sigmas_df=sigs_df,
                                 max_iter=max_iter,
-                                beta_fixed=beta_fixed)
+                                beta_fixed=beta_fixed,
+                                update_gaussian=update_gaussian)
     cns_ <- cns
     cns <- state2ratio(cns_, state_ratio)
     saveRDS(cns, paste0(plot_dir, "cns.rds"))

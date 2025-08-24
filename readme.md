@@ -6,9 +6,52 @@
 
 This pipeline not only identifies CNAs but also includes downstream analysis modules for **estimating tumor content** and **detecting tumor boundaries**, providing a powerful toolkit for spatially-resolved studies of the tumor microenvironment.
 
+
+
 -----
 
+## Prerequisites
 
+SpaCNA requires both **R** and **Python** environments.
+
+#### R dependencies
+Make sure the following R packages are installed:
+- `Seurat`
+- `biomaRt`
+- `ComplexHeatmap`
+- `parallelDist`
+- `irlba`
+- `edgeR`
+- `ggplot2`
+- `rootSolve`
+- `patchwork`
+- `glmnet`
+
+You can install them in R with:
+```r
+install.packages(c("Seurat", "biomaRt", "ComplexHeatmap", "parallelDist", 
+                   "irlba", "edgeR", "ggplot2", "rootSolve", "patchwork", "glmnet"))
+```
+
+### Python Dependencies
+
+The feature extraction step requires **Python (≥3.8)** with the following libraries:
+
+- `numpy`  
+- `pandas`  
+- `matplotlib`  
+- `torch`  
+- `torchvision`  
+- `scikit-learn`  
+- `opencv-python`  
+
+You can install them with:
+
+```bash
+pip install numpy pandas matplotlib torch torchvision scikit-learn opencv-python
+```
+
+-----
 ##  Usage Guide
 
 The SpaCNA analysis workflow consists of the following main steps:
