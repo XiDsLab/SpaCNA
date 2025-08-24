@@ -48,7 +48,7 @@ source("./utils_codes/image_tools.R")
 SpaCNA <- function(sample_dir,
                    image_dir,
                    plot_dir,
-                   BICseq_dir='./code/MBICseq',
+                   BICseq_dir='./utils_codes/MBICseq',
                    bin_file='./data/bin_K=1e+06_hg38.RDS',
                    data_type="10X",
                    normal_clusters,
