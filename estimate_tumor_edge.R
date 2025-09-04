@@ -22,7 +22,7 @@ source("./utils_codes/image_tools.R")
 # @return Seurat object with new metadata columns: `edge_score` and `edge`.
 # @export
 estimate_tumor_edge<- function(sample_dir, spacna_dir, plot_dir, tumor_content_dir,
-                           beta = 1, edge_thre = 0.25, tumor_thre = -1) {
+                           beta = 5, edge_thre = 0.25, tumor_thre = -1) {
   obj<-readRDS(paste0(sample_dir,"seurat_object.rds"))
   cns <- readRDS(paste0(spacna_dir, "cns.rds"))
   count_norm <- readRDS(paste0(spacna_dir, "count_norm.rds"))
@@ -87,4 +87,4 @@ estimate_tumor_edge<- function(sample_dir, spacna_dir, plot_dir, tumor_content_d
 # plot_dir<- ""
 # spacna_dir <- ""
 
-# tumor_content<-estimate_tumor_edge(sample_dir =sample_dir,plot_dir = plot_dir,spacna_dir = spacna_dir,tumor_content_dir=spacna_dir)
+# tumor_content<-estimate_tumor_edge(sample_dir =sample_dir,plot_dir = plot_dir,spacna_dir = spacna_dir,tumor_content_dir=spacna_dir, edge_thre = 0.03, tumor_thre = 0.55)
