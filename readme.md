@@ -1,6 +1,6 @@
 
 
-# SpaCNA: CNA detection from spatial transcriptomics using SpaCNA
+# SpaCNA: A spatial-aware framework for detecting copy number alterations from spatial transcriptomics
 
 **SpaCNA** is a computational pipeline for detecting Copy Number Alterations (CNAs) from spatial transcriptomics data by integrating three data modalities: **histology images**, **gene expression matrices**, and **spatial coordinates**.
 
