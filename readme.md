@@ -7,13 +7,6 @@
 This pipeline not only identifies CNAs but also includes downstream analysis modules for **estimating tumor content** and **detecting tumor boundaries**, providing a powerful toolkit for spatially-resolved studies of the tumor microenvironment.
 
 
-
------
-
-Of course. Here is the revised README section, updated in English with the specific version numbers you provided earlier.
-
------
-
 ## Requirements & Installation
 
 SpaCNA requires both **R** and **Python** environments. It is highly recommended to use a dedicated virtual environment (e.g., using `conda` or `venv`) to avoid conflicts with existing packages.
