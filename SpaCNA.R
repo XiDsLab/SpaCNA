@@ -57,7 +57,8 @@ SpaCNA <- function(sample_dir,
                    max_iter = 5,
                    beta_fixed = 5,
                    tumor_perc=1,
-                   update_gaussian=FALSE) {
+                   update_gaussian=FALSE,
+                   lambda=0.003) {
 
     # load object
     obj <- readRDS(paste0(sample_dir,"seurat_object.rds"))
@@ -125,8 +126,8 @@ SpaCNA <- function(sample_dir,
                                             tumor_perc=tumor_perc,
                                             common_dispersion=0.1,
                                             dropout_prob="au",
-                                            dlm_dV=0.1,
-                                            dlm_dW=0.002,
+                                            dlm_dV=dlm_dV,
+                                            dlm_dW=dlm_dV,
                                             alpha=c(0.5, 0.25, 0.25),
                                             gene_thre=2)
     saveRDS(parameter_init, paste0(plot_dir, "hrmf_para.rds"))
@@ -154,7 +155,7 @@ SpaCNA <- function(sample_dir,
 
     bk_bic <- calculate_CNV(t(count_norm),
                         baseline,
-                        lambda=0.005,
+                        lambda=lambda,
                         sample_dir=plot_dir,
                         BICseq_dir=BICseq_dir)
     saveRDS(bk_bic, paste0(plot_dir, "bk_bic.rds"))
@@ -195,4 +196,4 @@ SpaCNA <- function(sample_dir,
 # image_dir<- ""
 # plot_dir <- ""
 
-# cna_list<-SpaCNA(sample_dir,image_dir,plot_dir,normal_clusters = c(0,1,3,8))
+# cna_list<-SpaCNA(sample_dir,image_dir,plot_dir,normal_clusters = c(1,4,5,6),dlm_dV=0.1, dlm_dW=0.0001)

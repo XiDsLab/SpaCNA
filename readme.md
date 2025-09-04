@@ -1,56 +1,76 @@
 
 
-# SpaCNA: CNA detection from spatial transcriptomics using SpaCNA
+# SpaCNA: A spatial-aware framework for detecting copy number alterations from spatial transcriptomics
 
 **SpaCNA** is a computational pipeline for detecting Copy Number Alterations (CNAs) from spatial transcriptomics data by integrating three data modalities: **histology images**, **gene expression matrices**, and **spatial coordinates**.
 
 This pipeline not only identifies CNAs but also includes downstream analysis modules for **estimating tumor content** and **detecting tumor boundaries**, providing a powerful toolkit for spatially-resolved studies of the tumor microenvironment.
 
 
+## Requirements & Installation
 
------
+SpaCNA requires both **R** and **Python** environments. It is highly recommended to use a dedicated virtual environment (e.g., using `conda` or `venv`) to avoid conflicts with existing packages.
 
-## Prerequisites
+### Python Environment
 
-SpaCNA requires both **R** and **Python** environments.
+  - **Python:** 3.7.12
+  - **Key Packages:**
+      - `numpy`==1.21.6
+      - `matplotlib`==3.5.3
+      - `torch`==1.12.1
+      - `torchvision`==0.13.1
+      - `pandas`==1.3.5
+      - `scikit-learn`==1.0.2
 
-#### R dependencies
-Make sure the following R packages are installed:
-- `Seurat`
-- `biomaRt`
-- `ComplexHeatmap`
-- `parallelDist`
-- `irlba`
-- `edgeR`
-- `ggplot2`
-- `rootSolve`
-- `patchwork`
-- `glmnet`
+It is recommended to install the required packages using the provided `requirements.txt` file.
 
-You can install them in R with:
-```r
-install.packages(c("Seurat", "biomaRt", "ComplexHeatmap", "parallelDist", 
-                   "irlba", "edgeR", "ggplot2", "rootSolve", "patchwork", "glmnet"))
+**`requirements.txt`:**
+
+```txt
+numpy==1.21.6
+matplotlib==3.5.3
+torch==1.12.1
+torchvision==0.13.1
+pandas==1.3.5
+scikit-learn==1.0.2
 ```
 
-### Python Dependencies
-
-The feature extraction step requires **Python (≥3.8)** with the following libraries:
-
-- `numpy`  
-- `pandas`  
-- `matplotlib`  
-- `torch`  
-- `torchvision`  
-- `scikit-learn`  
-- `opencv-python`  
-
-You can install them with:
+Install all dependencies with:
 
 ```bash
-pip install numpy pandas matplotlib torch torchvision scikit-learn opencv-python
+pip install -r requirements.txt
 ```
 
+### R Environment
+
+  - **R:** 4.2.1
+  - **Key Packages:**
+      - `Seurat` (4.2.0)
+      - `biomaRt` (2.52.0)
+      - `ComplexHeatmap` (2.12.1)
+      - `parallelDist` (0.2.6)
+      - `irlba` (2.3.5.1)
+      - `edgeR` (3.38.4)
+      - `ggplot2` (3.4.1)
+      - `rootSolve` (1.8.2.3)
+      - `patchwork` (1.1.2)
+      - `glmnet` (4.1.8)
+
+You can install them by running the following commands in your R console. This script handles packages from both CRAN and Bioconductor.
+
+```r
+# Install BiocManager if not already installed
+if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")
+
+# Install packages from CRAN
+# For specific versions, you might need the 'remotes' package, e.g.:
+# remotes::install_version("Seurat", version = "4.2.0")
+install.packages(c("Seurat", "parallelDist", "irlba", "ggplot2", "rootSolve", "patchwork", "glmnet"))
+
+# Install packages from Bioconductor
+BiocManager::install(c("biomaRt", "ComplexHeatmap", "edgeR"))
+```
 -----
 ##  Usage Guide
 
@@ -183,3 +203,11 @@ This module identifies the boundary between tumor regions and normal tissue.
 
   * **Output:**
     Returns an updated Seurat object with `edge_score` and `edge` columns added to its `meta.data`.
+
+## Demo Data
+
+The `demo_data/` folder contains a sample dataset and the corresponding expected output files.
+
+---
+
+**Note:** The code and demo data were tested on a standard x64 Windows PC with an Intel CPU and 8 GB of RAM. Under these conditions, the runtime is ~10 minutes.

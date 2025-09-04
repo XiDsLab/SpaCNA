@@ -127,25 +127,7 @@ get_beta_seg <- function(cnv_state, neigh_list, beta_range=c(0.1,3)){
   }
 }
 
-get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_df, beta_fixed='au',beta_default=1, max_iter=5){
-  t1 <- Sys.time()
-  n_spot <- ncol(expr)
-  n_state <- ncol(mus_df)-1
-  
-  breaks_union<-sort(breaks_union)
-  breaks_union[length(breaks_union)]<-breaks_union[length(breaks_union)]+1
-  n_break<-length(breaks_union)
-  emission_prob_mat <- emission_probs_matrix(expr, mus_df, sigmas_df)
-  cnv_state_init <- apply(emission_prob_mat, c(1,2), which.max)
-  if (any(is.na(cnv_state_init))) {
-    print("cnv_state_init contains NA values!")
-}
 
-  mus<-mus_df[,-1]
-  sigmas<-sigmas_df[,-1]
-  cnv_state<-expr
-  
-  ### hmrf by segmentations
 get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_df, beta_fixed='au',beta_default=1, max_iter=5,update_gaussian=FALSE){
   t1 <- Sys.time()
   n_spot <- ncol(expr)
