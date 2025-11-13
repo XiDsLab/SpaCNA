@@ -48,7 +48,7 @@ source("./utils_codes/image_tools.R")
 SpaCNA <- function(sample_dir,
                    image_dir,
                    plot_dir,
-                   BICseq_dir='./utils_codes/MBICseq',
+                   BICseq_dir='./code/MBICseq',
                    bin_file='./data/bin_K=1e+06_hg38.RDS',
                    data_type="10X",
                    normal_clusters,
@@ -74,6 +74,7 @@ SpaCNA <- function(sample_dir,
     cluster <- as.character(seurat_cluster)
     spot_location <- get_spot_location(obj,type=data_type)
     normal_cells <- cell_barcodes[cluster %in% normal_clusters]
+    cnv_state_level=length(state_ratio)
 
     # gene position
     gene_pos <- readRDS(paste0(sample_dir, "gene_pos.rds"))
@@ -93,27 +94,46 @@ SpaCNA <- function(sample_dir,
     count_RNA_smooth <- chr_smooth(count_RNA, log=T, dlm_dV=dlm_dV, dlm_dW=dlm_dW)
     count_RNA_smooth <- edgeR::cpm(count_RNA_smooth)
 
-    neigh_cell <- get_final_neigh(image_dir, spot_location, k=7, thre=0.2, dist_thre='unknown')
+    expr_neigh<-get_expr_neigh_list(count_RNA_smooth,pca=20,k=10,thre=0.4)
+
+    is_empty <- is.null(image_dir) || 
+              length(image_dir) == 0 || 
+              image_dir == "" || 
+              all(trimws(image_dir) == "")
+  
+    if (is_empty) {
+        neigh_cell <- get_neigh_list_simple(spot_location, k=7)        
+    } else {
+        neigh_cell <- get_final_neigh(image_dir, spot_location, k=7, thre=0.2, dist_thre='unknown')
+    }
     count_RNA_spa <- spatial_smooth(count_RNA_smooth,
-                                    neigh_cell,
+                                    expr_neigh,
                                     neigh_cell,
                                     alpha=c(0.5, 0.25, 0.25))
     count_RNA_norm <- get_copy_ratio(count_RNA_spa, normal_cells)
 
     count_norm <- generate_bin_count(count_RNA_norm, gene_pos, bin, func=mean)
+    count_bin<-generate_bin_count(count_RNA, gene_pos, bin, func=sum)
     f <- gene_num >= 2
-    count_norm <- count_norm[f,]
+    # count_norm <- count_norm[f,]
+    count_norm<-preprocess(count_bin[f,],count_norm[f,],bin[f,],thre_bin = 0.8,thre_map = 250000)
+    
     if (!dir.exists(plot_dir)) {
         dir.create(plot_dir, recursive = TRUE)
     }
     saveRDS(count_norm, paste0(plot_dir, "count_norm.rds"))
     # plot CNA heatmap
-    f <- sample(1:length(cluster), 1000)
+    if (length(cluster)>1000){
+        f <- sample(1:length(cluster), 1000)
+    }else{
+        f <- 1:length(cluster)
+    }
     plot_heatmap(t(count_norm)[f,],
                 cell_cluster=cluster[f],
                 cell_annotation=cluster[f],
                 output_dir=plot_dir,
-                output_name="copy_ratio.png")
+                output_name="copy_ratio.png",
+                cnv_state_level=cnv_state_level)
 
     ## hmrf para init
     parameter_init <- estimate_hmrf_parameter(count_RNA=count_RNA,
@@ -121,13 +141,13 @@ SpaCNA <- function(sample_dir,
                                             gene_pos=gene_pos,
                                             bin=bin,
                                             gene_normalize=F,
-                                            cnv_num=3,
+                                            cnv_num=cnv_state_level,
                                             num_cells=200,
                                             tumor_perc=tumor_perc,
                                             common_dispersion=0.1,
                                             dropout_prob="au",
                                             dlm_dV=dlm_dV,
-                                            dlm_dW=dlm_dV,
+                                            dlm_dW=dlm_dW,
                                             alpha=c(0.5, 0.25, 0.25),
                                             gene_thre=2)
     saveRDS(parameter_init, paste0(plot_dir, "hrmf_para.rds"))
@@ -135,20 +155,32 @@ SpaCNA <- function(sample_dir,
     ## cn state init
     mus <- parameter_init[[1]]
     sigmas <- parameter_init[[2]]
-    mus_df <- data.frame(row.names=cell_barcodes,
-                        p=rep(tumor_perc, length(cell_barcodes)),
-                        mu1=mus[1], mu2=mus[2], mu3=mus[3])
-    sigs_df <- data.frame(row.names=cell_barcodes,
-                        p=rep(tumor_perc, length(cell_barcodes)),
-                        mu1=sigmas[1], mu2=sigmas[2], mu3=sigmas[3])
+    if (cnv_state_level==3){
+        mus_df <- data.frame(row.names=cell_barcodes,
+                            p=rep(tumor_perc, length(cell_barcodes)),
+                            mu1=mus[1], mu2=mus[2], mu3=mus[3])
+        sigs_df <- data.frame(row.names=cell_barcodes,
+                            p=rep(tumor_perc, length(cell_barcodes)),
+                            mu1=sigmas[1], mu2=sigmas[2], mu3=sigmas[3])
+
+    }else{
+        mus_df <- data.frame(row.names=cell_barcodes,
+                            p=rep(tumor_perc, length(cell_barcodes)),
+                            mu1=mus[1], mu2=mus[2], mu3=mus[3],mu4=mus[4], mu5=mus[5])
+        sigs_df <- data.frame(row.names=cell_barcodes,
+                            p=rep(tumor_perc, length(cell_barcodes)),
+                            mu1=sigmas[1], mu2=sigmas[2], mu3=sigmas[3], mu4=sigmas[4], mu3=sigmas[5])
+
+    }
 
     cnv_state <- get_cnv_init_perce(count_norm, mus_df, sigs_df)
     cnv_state_init <- state2ratio(cnv_state, state_ratio)
-    f <- sample(1:length(cluster), 1000)
+
     plot_heatmap(t(cnv_state_init)[f,],
                 cell_annotation=cluster[f],
                 output_dir=plot_dir,
-                output_name="cns_init.png")
+                output_name="cns_init.png",
+                cnv_state_level=cnv_state_level)
 
     ## segment
     baseline <- rowMeans(count_norm[,normal_cells])
@@ -178,7 +210,8 @@ SpaCNA <- function(sample_dir,
                 cell_cluster=cluster,
                 cell_annotation=cluster,
                 output_dir=plot_dir,
-                output_name="cns.png")
+                output_name="cns.png",
+                cnv_state_level=cnv_state_level)
 
     message("✅ SpaCNA finished! Results saved in: ", plot_dir)
 
@@ -191,9 +224,13 @@ SpaCNA <- function(sample_dir,
     ))
 }
 
+sample_dir <-  ""
+image_dir<- ""
+plot_dir <- ""
 
-# sample_dir <-  ""
-# image_dir<- ""
-# plot_dir <- ""
+# cna_list<-spacna(sample_dir,image_dir,plot_dir,state_ratio = c(0.5, 1, 1.5))
 
-# cna_list<-SpaCNA(sample_dir,image_dir,plot_dir,normal_clusters = c(1,4,5,6),dlm_dV=0.1, dlm_dW=0.0001)
+
+cna_list<-SpaCNA(sample_dir,image_dir,plot_dir,normal_clusters = c(0,1,3,8),dlm_dV=0.1, dlm_dW=0.001)
+# cna_list<-spacna(sample_dir,image_dir,plot_dir,state_ratio = c(0.5, 1, 1.5))
+

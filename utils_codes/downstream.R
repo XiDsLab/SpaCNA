@@ -6,7 +6,8 @@ plot_heatmap <- function(copy_ratio,
                          cell_annotation="none",
                          save_hc=F,
                          output_dir="./",
-                         output_name="copy_ratio.png"
+                         output_name="copy_ratio.png",
+                         cnv_state_level=3
 ){
   if(!dir.exists(output_dir)){
     dir.create(output_dir)
@@ -56,7 +57,11 @@ plot_heatmap <- function(copy_ratio,
   print("plotting")
   plot_data <- copy_ratio
   
-  color_thre <- c(0.5, 1.5)
+  if(cnv_state_level==3){
+    color_thre <- c(0.5, 1.5)
+  }else{
+    color_thre <- c(0, 2)
+  }
   c <- colorRampPalette(rev(RColorBrewer::brewer.pal(n=7, name="RdYlBu")))(100)
   colormap <-
     circlize::colorRamp2(

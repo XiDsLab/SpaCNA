@@ -8,6 +8,13 @@ cnv_setting_cnv3 <- data.frame(chr=paste0("chr", c(1:22)), cnv=1)
 cnv_setting_cnv3$cnv[c(1,3,5)] <- 0.5
 cnv_setting_cnv3$cnv[c(7,9,11,13)] <- 1.5
 
+## Chromosome information of simulated data cnv=5
+cnv_setting_cnv5 <- data.frame(chr=paste0("chr", c(1:22)), cnv=1)
+cnv_setting_cnv5$cnv[c(3,12,13)] <- 0.05
+cnv_setting_cnv5$cnv[c(4,11,14,21,22)] <- 0.5
+cnv_setting_cnv5$cnv[c(6,9,16,18,19)] <- 1.5
+cnv_setting_cnv5$cnv[c(7,8,17)] <- 2
+
 ## simulate the expression matrix
 sim_mat_new<- function(expr,gene_means,num_cells, common_dispersion,dropout_prob='au') {
   ##if dropout_prob='au' get the parameters of 0 else use the given number
@@ -194,14 +201,26 @@ estimate_hmrf_parameter <- function(count_RNA,
     gene_num[i] <- sum(f)
   }
   count_sim_norm_2 <- count_sim_norm[gene_num>gene_thre, ]
-  state_ratio <- c(0.5,1,1.5)
-  mus <- rep(0, 3)
-  sigmas <- rep(0, 3)
-  for(i in 1:3){
-    cnv_chr <- to_use_info$cnv_setting$chr[to_use_info$cnv_setting$cnv==state_ratio[i]]
-    f1 <- str2bin(rownames(count_sim_norm_2))$chr %in% cnv_chr
-    mus[i] <- mean(count_sim_norm_2[f1, to_use_info$cell_type=="tumor"])
-    sigmas[i] <- sd(count_sim_norm_2[f1, to_use_info$cell_type=="tumor"])
+  if(cnv_num==3){
+    state_ratio <- c(0.5,1,1.5)
+    mus <- rep(0, 3)
+    sigmas <- rep(0, 3)
+    for(i in 1:3){
+        cnv_chr <- to_use_info$cnv_setting$chr[to_use_info$cnv_setting$cnv==state_ratio[i]]
+        f1 <- str2bin(rownames(count_sim_norm_2))$chr %in% cnv_chr
+        mus[i] <- mean(count_sim_norm_2[f1, to_use_info$cell_type=="tumor"])
+        sigmas[i] <- sd(count_sim_norm_2[f1, to_use_info$cell_type=="tumor"])
+    }
+  }else{
+        state_ratio <- c(0.05,0.5,1,1.5,2)
+        mus <- rep(0, 5)
+        sigmas <- rep(0, 5)
+        for(i in 1:5){
+            cnv_chr <- to_use_info$cnv_setting$chr[to_use_info$cnv_setting$cnv==state_ratio[i]]
+            f1 <- str2bin(rownames(count_sim_norm_2))$chr %in% cnv_chr
+            mus[i] <- mean(count_sim_norm_2[f1, to_use_info$cell_type=="tumor"])
+            sigmas[i] <- sd(count_sim_norm_2[f1, to_use_info$cell_type=="tumor"])
+        }
   }
   return(list(mus, sigmas))
 }

@@ -15,14 +15,23 @@ cnv_state_init <- function(data, mus, sigmas){
 }
 
 
-emission_probs_matrix <- function(norm_data,mus_df,sigmas_df){
-  # norm_data: bin*cell
-  n_state <- ncol(mus_df) - 1
-  emission_prob_mat <- array(NA, dim = c(nrow(norm_data), ncol(norm_data), 
-                                         n_state))
-  for(j in 1:ncol(norm_data)){
+emission_probs_matrix <- function(norm_data, mus_df, sigmas_df) {
+  # norm_data: bin*cell matrix
+  # mus_df: data frame containing mus_df[,0] (reference values, first column) and means for each state
+  # sigmas_df: data frame containing standard deviations for each state (matching structure of mus_df)
+  n_state <- ncol(mus_df) - 1  # Number of states (excluding mus_df[,0])
+  emission_prob_mat <- array(NA, dim = c(nrow(norm_data), ncol(norm_data), n_state))
+  
+  for (j in 1:ncol(norm_data)) {  # Iterate over each cell
+    mu0 <- mus_df[j, 'mu1']  # Reference value (mus_df[,0])
+    sigma<-sigmas_df[j,'mu1']
+    x <- norm_data[, j]
+    
+    # Apply clamping ONLY to the first state (k=1)
+    
+    x_clamped <- ifelse(x < (mu0 - sigma), mu0, x)
     for(k in 1:n_state){
-      emission_prob_mat[, j, k] <- dnorm(norm_data[,j], mus_df[j,k + 1], sigmas_df[j,k + 1])
+      emission_prob_mat[, j, k] <- dnorm(x_clamped, mus_df[j,k + 1], sigmas_df[j,k + 1])
     }
   }
   return(emission_prob_mat)
@@ -127,7 +136,6 @@ get_beta_seg <- function(cnv_state, neigh_list, beta_range=c(0.1,3)){
   }
 }
 
-
 get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_df, beta_fixed='au',beta_default=1, max_iter=5,update_gaussian=FALSE){
   t1 <- Sys.time()
   n_spot <- ncol(expr)
@@ -219,7 +227,6 @@ get_state_icm_seg_perc<-function(expr, breaks_union,neigh_list, mus_df, sigmas_d
   print(paste0('used ',difftime(t2, t1, units = "mins"),' mins to do hmrf'))
   return(cnv_state)
 }
-
 
 
 calculate_CNV<- function(norm_count, baseline, 
