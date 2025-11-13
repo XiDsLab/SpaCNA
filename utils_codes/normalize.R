@@ -23,7 +23,7 @@ generate_bin_count <- function(count_RNA, gene_pos, bin, func=mean){
   # saveRDS(count_bin, paste0(sample_dir,"count_bin.rds"))
 }
 
-preprocess <- function(count, bin, normal_cells="none", 
+preprocess <- function(count,count_norm, bin, normal_cells="none", 
                        thre_bin=0.8, thre_cell=1, 
                        thre_map=500000){
   # count: bin*cell
@@ -33,6 +33,8 @@ preprocess <- function(count, bin, normal_cells="none",
   print(paste("number of cell before filter:", length(f1)))
   print(paste("number of cell after filter:", sum(f1)))
   count_filter <- count_filter[,f1]
+  count_norm<-count_norm[,f1]
+  
   
   if(identical(normal_cells, "none")){
     temp <- rowSums(count_filter<=0)
@@ -41,15 +43,14 @@ preprocess <- function(count, bin, normal_cells="none",
     temp <- rowSums(count_filter[,normal_cells]<=0)
     f2 <- temp<thre_bin*ncol(count_filter[,normal_cells]) & bin$map>=thre_map
   }
-
+  
   print(paste("number of bin before filter:", length(f2)))
   print(paste("number of bin after filter:", sum(f2)))
   count_filter <- count_filter[f2,]
+  count_norm<-count_norm[f2,]
   
-  q <- quantile(count_filter, probs=c(1:100)*0.01)
-  thre <- q[99]
-  count_filter[count_filter>thre] <- thre
-  return(count_filter)
+
+  return(count_norm)
 }
 
 
