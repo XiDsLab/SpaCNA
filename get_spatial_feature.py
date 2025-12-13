@@ -191,7 +191,12 @@ def get_pca_feature(sample_dir,r):
     np.savetxt(sample_dir+"resnet50/features_pca.txt", features_pca)
     
 
-if __name__ == "__main__":
+import argparse
+import os
+import time
+from pathlib import Path
+
+def main():
     """
     Example run:
     Suppose your data is stored in /your sample dir/,
@@ -210,15 +215,27 @@ if __name__ == "__main__":
         - sample1/input/            stores local tile .npy files
         - sample1/resnet50/         stores extracted features (features.txt / features_pca.txt, etc.)
     """
-    # Modify this to your sample directory, must end with "/"
-    sample_dir = "/your sample dir/"  
-    r = 50   # Cropping radius for each spot, adjustable depending on the resolution
-
+    parser = argparse.ArgumentParser(description='Extract spatial features from tissue images')
+    parser.add_argument('--sample_dir', type=str, required=True,
+                       help='Sample directory containing tissue_hires_image.png, spot.txt, exp_location.txt')
+    parser.add_argument('--radius', '-r', type=int, default=50,
+                       help='Cropping radius for each spot (default: 50)')
+    
+    args = parser.parse_args()
+    
+    # Use pathlib for cross-platform path handling
+    sample_dir = Path(args.sample_dir)
+    r = args.radius
+    
     start_time = time.time()
-    get_pca_feature(sample_dir, r)
+    get_pca_feature(str(sample_dir), r)
     end_time = time.time()
-
+    
     print(f"✅ Feature extraction completed, elapsed time: {end_time - start_time:.2f} seconds")
-    print(f"Results saved in: {os.path.join(sample_dir, 'resnet50/')}")
+    # Use pathlib for path joining
+    results_path = sample_dir / "resnet50"
+    print(f"Results saved in: {results_path}")
 
+if __name__ == "__main__":
+    main()
 
