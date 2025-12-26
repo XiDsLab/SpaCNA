@@ -13,26 +13,31 @@ SpaCNA requires both **R** and **Python** environments. It is highly recommended
 
 ### Python Environment
 
-  - **Python:** 3.7.12
+  - **Python:** 3.7.9
   - **Key Packages:**
+      - `torch`==1.13.1+cu117
+      - `torchvision`==0.14.1+cu117
+      - `opencv-python`==4.9.0
       - `numpy`==1.21.6
       - `matplotlib`==3.5.3
-      - `torch`==1.12.1
-      - `torchvision`==0.13.1
       - `pandas`==1.3.5
       - `scikit-learn`==1.0.2
+      - `scipy`==1.10.1
 
 It is recommended to install the required packages using the provided `requirements.txt` file.
 
 **`requirements.txt`:**
 
 ```txt
+torch==1.13.1+cu117
+torchvision==0.14.1+cu117
+--extra-index-url https://download.pytorch.org/whl/cu117
+opencv-python==4.9.0
 numpy==1.21.6
-matplotlib==3.5.3
-torch==1.12.1
-torchvision==0.13.1
 pandas==1.3.5
 scikit-learn==1.0.2
+matplotlib==3.5.3
+scipy==1.10.1
 ```
 
 Install all dependencies with:
@@ -110,28 +115,16 @@ This step uses a pre-trained ResNet50 model to extract morphological features fr
 
   * **How to run:**
 
-    1.  Open and edit the `get_spatial_feature.py` file.
-    2.  Modify the `sample_dir` variable in the `main` block to point to the directory containing your image and coordinate files (must end with `/`).
-    3.  Adjust the cropping radius `r` as needed based on image resolution.
+    Execute the script from your terminal and adjust the cropping radius `radius` as needed based on image resolution.
 
     <!-- end list -->
 
-    ```python
-    if __name__ == "__main__":
-        # Modify this to your sample directory
-        sample_dir = "/your sample directory/"  
-        
-        # Cropping radius for each spot, adjustable depending on the resolution
-        r = 50   
-
-        # Run feature extraction
-        get_pca_feature(sample_dir, r)
+    ```terminal
+    python get_spatial_feature.py --sample_dir "/your sample directory/" --radius 50
     ```
 
-    4.  Execute the script from your terminal: `python get_spatial_feature.py`
-
   * **Output:**
-    The script will automatically generate a `resnet50/` folder within your `sample_dir`, containing the extracted feature files, such as `features_pca.txt`.
+    The script will automatically generate a `resnet50/` folder within your `sample_dir`, containing the extracted feature files, such as `features_pca.txt`. Additionally, a `plot/` folder will be created within your `sample_dir`, which contains graph images corresponding to different image thresholds.
 
 ### Step 2: Run SpaCNA for CNA Detection
 
@@ -140,22 +133,11 @@ This core step integrates gene expression, spatial coordinates, and image featur
   * **Script:** `SpaCNA.R`
 
   * **How to run:**
-    In your R environment, load the `SpaCNA` function and run it with the following parameters.
+    In your R environment, execute the script from your terminal.
 
-    ```r
-    # Example run
-    sample_dir <- "/your sample directory/"
-    image_dir <- "/your image feature directory/"
-    plot_dir <- "/your to save results directory/"
-    normal_clusters = c(cluster1, cluster2)
+    ```terminal
 
-    cna_list <- SpaCNA(
-        sample_dir = sample_dir,         # Directory containing seurat_object.rds and gene_pos.rds
-        image_dir = image_dir,           # Directory containing the resnet50/ folder from Step 1
-        plot_dir = plot_dir,             # Directory to save results and plots
-        normal_clusters = normal_clusters # normal_clusters in `seurat_object.rds` that represent normal cells to be used as reference.
-        # ... other advanced parameters
-    )
+    Rscript SpaCNA.R --sample_dir="/your/sample/directory" --sample_dir="/your/image feature/directory" --plot_dir="/path/to/output" --normal_clusters="cluster1, cluster2"
     ```
     * **Output:**
     The script will generate the CNA results and plots within your `image_dir`.
@@ -169,14 +151,8 @@ This downstream analysis module estimates the proportion of tumor cells within e
 
   * **How to run:**
 
-    ```r
-    # Estimate tumor content
-    seurat_obj_updated <- estimate_tumor_content(
-        sample_dir = "/path/to/your/sample/data/",           # Directory containing seurat_object.rds
-        spacna_dir = "/path/to/your/spacna/results/",        # Directory containing SpaCNA results (e.g., cns.rds)
-        plot_dir = "/path/to/your/plot/output/",             # Directory for plot outputs
-        K = 7                                               # Number of clones for clustering
-    )
+    ```terminal
+    Rscript estimate_tumor_content.R --sample_dir="/path/to/your/sample/data" --plot_dir="/path/to/output" --spacna_dir="/path/to/your/spacna/results"
     ```
 
   * **Output:**
@@ -190,15 +166,10 @@ This module identifies the boundary between tumor regions and normal tissue.
 
   * **How to run:**
 
-    ```r
+    ```terminal
     # Detect tumor edge
-    seurat_obj_final <- estimate_tumor_edge(
-        sample_dir = "/path/to/your/sample/data/",
-        spacna_dir = "/path/to/your/spacna/results/",
-        plot_dir = "/path/to/your/plot/output/",
-        tumor_content_dir = "/path/to/your/tumor_content/results/", # Directory with tumor content results
-        # ... other parameters
-    )
+    Rscript estimate_tumor_edge.R --sample_dir="/path/to/data" --plot_dir="/path/to/output" --spacna_dir="/path/to/your/spacna/results" --tumor_content_dir="/path/to/your/tumor_content/results"
+
     ```
 
   * **Output:**

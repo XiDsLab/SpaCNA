@@ -13,7 +13,11 @@ source("./utils_codes/image_tools.R")
 # @param cnv_thre Minimum number of CNA segments to consider a clone as tumor (default: 10)
 # @return Seurat object with metadata `tumor_content` added
 estimate_tumor_content <- function(sample_dir, spacna_dir, plot_dir, K = 7, cnv_thre = 10) {
-  obj<-readRDS(paste0(sample_dir,"seurat_object.rds"))
+  sample_dir <- file.path(sample_dir, "")
+  spacna_dir <- file.path(spacna_dir, "")
+  plot_dir <- file.path(plot_dir, "")
+
+  obj <- readRDS(file.path(sample_dir, "seurat_object.rds"))
   if(!dir.exists(plot_dir)) dir.create(plot_dir, recursive = TRUE)
 
   cns <- readRDS(file.path(spacna_dir, "cns.rds"))
@@ -105,9 +109,70 @@ estimate_tumor_content <- function(sample_dir, spacna_dir, plot_dir, K = 7, cnv_
   return(obj)
 }
 
+# CLI Wrapper function
+run_estimate_tumor_content_cli <- function() {
+  # Parse command line arguments
+  args <- commandArgs(trailingOnly = TRUE)
+  
+  # Default values
+  sample_dir <- ""
+  plot_dir <- ""
+  spacna_dir <- ""
+  K <- 7
+  cnv_thre <- 10
+  
+  # Parse arguments
+  for (arg in args) {
+    if (grepl("^--sample_dir=", arg)) {
+      sample_dir <- sub("^--sample_dir=", "", arg)
+    } else if (grepl("^--plot_dir=", arg)) {
+      plot_dir <- sub("^--plot_dir=", "", arg)
+    } else if (grepl("^--spacna_dir=", arg)) {
+      spacna_dir <- sub("^--spacna_dir=", "", arg)
+    } else if (grepl("^--K=", arg)) {
+      K <- as.numeric(sub("^--K=", "", arg))
+    } else if (grepl("^--cnv_thre=", arg)) {
+      cnv_thre <- as.numeric(sub("^--cnv_thre=", "", arg))
+    }
+  }
+  
+  # Validate required arguments
+  if (sample_dir == "" || plot_dir == "" || spacna_dir == "") {
+    stop("Error: --sample_dir, --plot_dir, and --spacna_dir arguments are required.")
+  }
+  
+  # Run estimate_tumor_content
+  tumor_content <- estimate_tumor_content(
+    sample_dir = sample_dir,
+    plot_dir = plot_dir,
+    spacna_dir = spacna_dir,
+    K = K,
+    cnv_thre = cnv_thre
+  )
+  
+  return(tumor_content)
+}
 
-# sample_dir <-  ""
-# plot_dir<- ""
-# spacna_dir <- ""
+# Execute CLI if called from command line
+if (!interactive() && length(commandArgs(trailingOnly = TRUE)) > 0) {
+  run_estimate_tumor_content_cli()
+}
+
+# For backward compatibility - example usage
+if (FALSE) {
+  # Original style
+  sample_dir <- ""
+  plot_dir <- ""
+  spacna_dir <- ""
+  
+  # Run analysis
+  tumor_content <- estimate_tumor_content(
+    sample_dir = sample_dir,
+    plot_dir = plot_dir,
+    spacna_dir = spacna_dir,
+    K = 7,
+    cnv_thre = 10
+  )
+}
 
 # tumor_content<-estimate_tumor_content(sample_dir =sample_dir,plot_dir = plot_dir,spacna_dir = spacna_dir,tumor_content_dir=spacna_dir)

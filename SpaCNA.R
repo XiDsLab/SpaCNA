@@ -4,8 +4,8 @@ source("./utils_codes/normalize.R")
 source("./utils_codes/hrmf_em.R")
 source("./utils_codes/hrmf_init.R")
 source("./utils_codes/image_tools.R")
-# Spatial CNA Analysis Pipeline
 
+# Spatial CNA Analysis Pipeline
 #
 # This function performs spatial CNA detection and visualization
 # given a Seurat object and spatial transcriptomics data.
@@ -39,7 +39,6 @@ source("./utils_codes/image_tools.R")
 # @param max_iter Maximum iterations for HMRF (default: 5).
 # @param beta_fixed Beta parameter for HMRF (default: 5).
 # @param update_gaussian Logical. Whether to update the mean and standard deviation of the Gaussian distribution.
-
 # @param tumor_perc Numeric vector indicating the tumor fraction for spots. 
 #   This can be estimated using SpaCNA's downstream module. Defaults to 1 for all spots.
 #
@@ -59,7 +58,12 @@ SpaCNA <- function(sample_dir,
                    tumor_perc=1,
                    update_gaussian=FALSE,
                    lambda=0.003) {
-
+    
+    # Use file.path for cross-platform path handling
+    sample_dir <- file.path(sample_dir, "")
+    image_dir <- if(image_dir != "") file.path(image_dir, "") else image_dir
+    plot_dir <- file.path(plot_dir, "")
+    
     # load object
     obj <- readRDS(paste0(sample_dir,"seurat_object.rds"))
 
@@ -77,7 +81,7 @@ SpaCNA <- function(sample_dir,
     cnv_state_level=length(state_ratio)
 
     # gene position
-    gene_pos <- readRDS(paste0(sample_dir, "gene_pos.rds"))
+    gene_pos <- readRDS(file.path(sample_dir, "gene_pos.rds"))
     gene_pos <- gene_pos[gene_pos$symbol %in% rownames(count_RNA), ]
     gene_pos <- gene_pos[order(as.numeric(substr(gene_pos$chr,4,5)), gene_pos$start), ]
     gene_pos$n <- 1:nrow(gene_pos)
@@ -121,7 +125,7 @@ SpaCNA <- function(sample_dir,
     if (!dir.exists(plot_dir)) {
         dir.create(plot_dir, recursive = TRUE)
     }
-    saveRDS(count_norm, paste0(plot_dir, "count_norm.rds"))
+    saveRDS(count_norm, file.path(plot_dir, "count_norm.rds"))
     # plot CNA heatmap
     if (length(cluster)>1000){
         f <- sample(1:length(cluster), 1000)
@@ -150,7 +154,7 @@ SpaCNA <- function(sample_dir,
                                             dlm_dW=dlm_dW,
                                             alpha=c(0.5, 0.25, 0.25),
                                             gene_thre=2)
-    saveRDS(parameter_init, paste0(plot_dir, "hrmf_para.rds"))
+    saveRDS(parameter_init, file.path(plot_dir, "hrmf_para.rds"))
 
     ## cn state init
     mus <- parameter_init[[1]]
@@ -190,7 +194,7 @@ SpaCNA <- function(sample_dir,
                         lambda=lambda,
                         sample_dir=plot_dir,
                         BICseq_dir=BICseq_dir)
-    saveRDS(bk_bic, paste0(plot_dir, "bk_bic.rds"))
+    saveRDS(bk_bic, file.path(plot_dir, "bk_bic.rds"))
 
     ## hmrf final
     cns <- get_state_icm_seg_perc(count_norm,
@@ -203,7 +207,7 @@ SpaCNA <- function(sample_dir,
                                 update_gaussian=update_gaussian)
     cns_ <- cns
     cns <- state2ratio(cns_, state_ratio)
-    saveRDS(cns, paste0(plot_dir, "cns.rds"))
+    saveRDS(cns, file.path(plot_dir, "cns.rds"))
 
     cns <- denoise(cns, thre=0.98)
     plot_heatmap(t(cns),
@@ -224,13 +228,67 @@ SpaCNA <- function(sample_dir,
     ))
 }
 
-sample_dir <-  ""
-image_dir<- ""
-plot_dir <- ""
+# CLI Wrapper function
+run_spacna_cli <- function() {
+    # Parse command line arguments
+    args <- commandArgs(trailingOnly = TRUE)
+    
+    # Default values
+    sample_dir <- ""
+    image_dir <- ""
+    plot_dir <- ""
+    normal_clusters <- c(0, 1, 3, 8)
+    dlm_dV <- 0.1
+    dlm_dW <- 0.001
+    
+    # Parse arguments
+    for (arg in args) {
+        if (grepl("^--sample_dir=", arg)) {
+            sample_dir <- sub("^--sample_dir=", "", arg)
+        } else if (grepl("^--image_dir=", arg)) {
+            image_dir <- sub("^--image_dir=", "", arg)
+        } else if (grepl("^--plot_dir=", arg)) {
+            plot_dir <- sub("^--plot_dir=", "", arg)
+        } else if (grepl("^--normal_clusters=", arg)) {
+            cluster_str <- sub("^--normal_clusters=", "", arg)
+            normal_clusters <- as.numeric(unlist(strsplit(cluster_str, ",")))
+        } else if (grepl("^--dlm_dV=", arg)) {
+            dlm_dV <- as.numeric(sub("^--dlm_dV=", "", arg))
+        } else if (grepl("^--dlm_dW=", arg)) {
+            dlm_dW <- as.numeric(sub("^--dlm_dW=", "", arg))
+        }
+    }
+    
+    # Validate required argument
+    if (sample_dir == "" || plot_dir == "") {
+        stop("Error: --sample_dir and --plot_dir arguments are required.")
+    }
+    
+    # Run SpaCNA
+    cna_list <- SpaCNA(sample_dir = sample_dir,
+                       image_dir = image_dir,
+                       plot_dir = plot_dir,
+                       normal_clusters = normal_clusters,
+                       dlm_dV = dlm_dV,
+                       dlm_dW = dlm_dW)
+    
+    return(cna_list)
+}
 
-# cna_list<-spacna(sample_dir,image_dir,plot_dir,state_ratio = c(0.5, 1, 1.5))
+# Execute CLI if called from command line
+if (!interactive() && length(commandArgs(trailingOnly = TRUE)) > 0) {
+    run_spacna_cli()
+}
 
-
-cna_list<-SpaCNA(sample_dir,image_dir,plot_dir,normal_clusters = c(0,1,3,8),dlm_dV=0.1, dlm_dW=0.001)
-# cna_list<-spacna(sample_dir,image_dir,plot_dir,state_ratio = c(0.5, 1, 1.5))
-
+# For backward compatibility - example usage
+if (FALSE) {
+    # Original style (users can still edit these variables if needed)
+    sample_dir <- ""
+    image_dir <- ""
+    plot_dir <- ""
+    
+    # Run analysis
+    cna_list <- SpaCNA(sample_dir, image_dir, plot_dir, 
+                       normal_clusters = c(0, 1, 3, 8), 
+                       dlm_dV = 0.1, dlm_dW = 0.001)
+}

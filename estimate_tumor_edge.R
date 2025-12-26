@@ -23,11 +23,18 @@ source("./utils_codes/image_tools.R")
 # @export
 estimate_tumor_edge<- function(sample_dir, spacna_dir, plot_dir, tumor_content_dir,
                            beta = 5, edge_thre = 0.25, tumor_thre = -1) {
-  obj<-readRDS(paste0(sample_dir,"seurat_object.rds"))
-  cns <- readRDS(paste0(spacna_dir, "cns.rds"))
-  count_norm <- readRDS(paste0(spacna_dir, "count_norm.rds"))
-  gaussian_result<-readRDS(paste0(spacna_dir,'hrmf_para.rds'))
-  df<-readRDS(paste0(tumor_content_dir,'tumor_content_df.rds'))
+  # Use file.path for cross-platform compatibility
+  sample_dir <- file.path(sample_dir, "")
+  spacna_dir <- file.path(spacna_dir, "")
+  plot_dir <- file.path(plot_dir, "")
+  tumor_content_dir <- file.path(tumor_content_dir, "")
+
+  obj <- readRDS(file.path(sample_dir, "seurat_object.rds"))
+  cns <- readRDS(file.path(spacna_dir, "cns.rds"))
+  count_norm <- readRDS(file.path(spacna_dir, "count_norm.rds"))
+  gaussian_result <- readRDS(file.path(spacna_dir, 'hrmf_para.rds'))
+  df <- readRDS(file.path(tumor_content_dir, 'tumor_content_df.rds'))
+
 
   obj <- AddMetaData(obj, df$p_estimate, col.name="tumor_content")
   spot_location <- get_spot_location(obj)
@@ -83,8 +90,80 @@ estimate_tumor_edge<- function(sample_dir, spacna_dir, plot_dir, tumor_content_d
   return(obj)
 }
 
-# sample_dir <-  ""
-# plot_dir<- ""
-# spacna_dir <- ""
+# CLI Wrapper function
+run_estimate_tumor_edge_cli <- function() {
+  # Parse command line arguments
+  args <- commandArgs(trailingOnly = TRUE)
+  
+  # Default values
+  sample_dir <- ""
+  plot_dir <- ""
+  spacna_dir <- ""
+  tumor_content_dir <- ""
+  beta <- 5
+  edge_thre <- 0.25
+  tumor_thre <- -1
+  
+  # Parse arguments
+  for (arg in args) {
+    if (grepl("^--sample_dir=", arg)) {
+      sample_dir <- sub("^--sample_dir=", "", arg)
+    } else if (grepl("^--plot_dir=", arg)) {
+      plot_dir <- sub("^--plot_dir=", "", arg)
+    } else if (grepl("^--spacna_dir=", arg)) {
+      spacna_dir <- sub("^--spacna_dir=", "", arg)
+    } else if (grepl("^--tumor_content_dir=", arg)) {
+      tumor_content_dir <- sub("^--tumor_content_dir=", "", arg)
+    } else if (grepl("^--beta=", arg)) {
+      beta <- as.numeric(sub("^--beta=", "", arg))
+    } else if (grepl("^--edge_thre=", arg)) {
+      edge_thre <- as.numeric(sub("^--edge_thre=", "", arg))
+    } else if (grepl("^--tumor_thre=", arg)) {
+      tumor_thre <- as.numeric(sub("^--tumor_thre=", "", arg))
+    }
+  }
+  
+  # Validate required arguments
+  if (sample_dir == "" || plot_dir == "" || spacna_dir == "" || tumor_content_dir == "") {
+    stop("Error: --sample_dir, --plot_dir, --spacna_dir, and --tumor_content_dir arguments are required.")
+  }
+  
+  # Run estimate_tumor_edge
+  tumor_edge_result <- estimate_tumor_edge(
+    sample_dir = sample_dir,
+    plot_dir = plot_dir,
+    spacna_dir = spacna_dir,
+    tumor_content_dir = tumor_content_dir,
+    beta = beta,
+    edge_thre = edge_thre,
+    tumor_thre = tumor_thre
+  )
+  
+  return(tumor_edge_result)
+}
+
+# Execute CLI if called from command line
+if (!interactive() && length(commandArgs(trailingOnly = TRUE)) > 0) {
+  run_estimate_tumor_edge_cli()
+}
+
+# For backward compatibility - example usage
+if (FALSE) {
+  # Original style
+  sample_dir <- ""
+  plot_dir <- ""
+  spacna_dir <- ""
+  tumor_content_dir <- spacna_dir
+  
+  # Run analysis
+  tumor_content <- estimate_tumor_edge(
+    sample_dir = sample_dir,
+    plot_dir = plot_dir,
+    spacna_dir = spacna_dir,
+    tumor_content_dir = tumor_content_dir,
+    edge_thre = 0.03,
+    tumor_thre = 0.55
+  )
+}
 
 # tumor_content<-estimate_tumor_edge(sample_dir =sample_dir,plot_dir = plot_dir,spacna_dir = spacna_dir,tumor_content_dir=spacna_dir, edge_thre = 0.03, tumor_thre = 0.55)

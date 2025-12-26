@@ -22,6 +22,9 @@ from sklearn.decomposition import PCA
 import cv2
 import pandas as pd 
 
+from sklearn.neighbors import NearestNeighbors
+from scipy.stats import pearsonr
+
 def mkdir(path):
  
 	folder = os.path.exists(path)
@@ -43,24 +46,44 @@ def get_local_image(img, x, y, r):
     return img[int(x-r):int(x+r),int(y-r):int(y+r),:]
 
 
+def draw_graph(adj, centers, img, N, title, edge_color='black', save_path=None):
+    plt.figure(figsize=(10, 10))
+    plt.imshow(img)
+    # plt.scatter(centers[:, 1], centers[:, 0], c='skyblue', s=10)
+    for i in range(N):
+        for j in range(i + 1, N):
+            if adj[i, j] == 1:
+                y0, x0 = centers[i]
+                y1, x1 = centers[j]
+                plt.plot([x0, x1], [y0, y1], c=edge_color, linewidth=1.5)
+    plt.scatter(centers[:, 1], centers[:, 0], c='skyblue', s=10, zorder=2)
+
+    plt.title(title)
+    plt.axis('off')
+    # saving
+    if save_path is not None:
+        plt.savefig(save_path, bbox_inches='tight', dpi=300, format='pdf')
+    plt.show()
 
 
-def get_pca_feature(sample_dir,r):
-    mkdir(sample_dir+'input') 
-    mkdir(sample_dir+'resnet50') 
+
+def get_pca_feature(sample_dir,r,n_neighbors = 6):
+    mkdir(sample_dir+'/input') 
+    mkdir(sample_dir+'/resnet50') 
+    mkdir(sample_dir+'/plot') 
     #### prepare data ####
     print("---  prepare data  ---")
     spot= pd.read_csv(sample_dir+'/exp_location.txt',sep='\\s+',header=None)
     spot_name= pd.read_csv(sample_dir+'/spot.txt',sep='\\s+',header=None)
-    centers = np.loadtxt(sample_dir+"exp_location.txt")
-    img = cv2.imread(sample_dir+"tissue_hires_image.png")
+    centers = np.loadtxt(sample_dir+"/exp_location.txt")
+    img = cv2.imread(sample_dir+"/tissue_hires_image.png")
     for i in range(centers.shape[0]):
         #print(i)
         x, y = int(centers[i,0]), int(centers[i,1])##### x y!
         center_name=spot_name.iloc[i,0]
         tile = get_local_image(img, x=x, y=y, r=r)
         #print(tile)
-        save_dir = sample_dir+"input/{name}_r={size}.npy".format(name=center_name,size=r)
+        save_dir = sample_dir+"/input/{name}_r={size}.npy".format(name=center_name,size=r)
         np.save(save_dir, tile)
     
     #### calculate normalization mean & std ####
@@ -87,9 +110,9 @@ def get_pca_feature(sample_dir,r):
         def __len__(self):
             return len(self.img_list)
         
-    img_list = os.listdir(sample_dir+"input/")
+    img_list = os.listdir(sample_dir+"/input/")
     #img_list = os.path.basename(x) for x in glob.glob(sample_dir+"input/*r=48.npy")]
-    data1 = img_dataset1(img_dir=sample_dir+"input/", img_list=img_list,
+    data1 = img_dataset1(img_dir=sample_dir+"/input/", img_list=img_list,
                             transform=img_transform1)
     # test = OL_data[100]
     dataloader1 = DataLoader(data1, batch_size=128, shuffle=False, num_workers=0)
@@ -153,8 +176,8 @@ def get_pca_feature(sample_dir,r):
         def __len__(self):
             return len(self.img_list)
 
-    img_list = os.listdir(sample_dir+"input/")
-    data1 = img_dataset(img_dir=sample_dir+"input/", img_list=img_list,
+    img_list = os.listdir(sample_dir+"/input/")
+    data1 = img_dataset(img_dir=sample_dir+"/input/", img_list=img_list,
                             transform=img_transform)
     # test = OL_data[100]
     dataloader = DataLoader(data1, batch_size=128, shuffle=False, num_workers=0)
@@ -181,17 +204,68 @@ def get_pca_feature(sample_dir,r):
     print("---save the result  ---")
     features_array = np.vstack(features)
     feature_name_array = np.hstack(feature_name).T
-    np.savetxt(sample_dir+"resnet50/features.txt", features_array)
-    np.savetxt(sample_dir+"resnet50/feature_name.txt", feature_name_array, fmt='%s')
+    np.savetxt(sample_dir+"/resnet50/features.txt", features_array)
+    np.savetxt(sample_dir+"/resnet50/feature_name.txt", feature_name_array, fmt='%s')
 
     ###calculate the feature
     pca = PCA(n_components=10)
     pca.fit(features_array)
     features_pca = pca.transform(features_array)
-    np.savetxt(sample_dir+"resnet50/features_pca.txt", features_pca)
-    
+    np.savetxt(sample_dir+"/resnet50/features_pca.txt", features_pca)
 
-if __name__ == "__main__":
+    #### plot ####
+    df = pd.DataFrame(features_pca)
+    df.index=feature_name_array
+    df_sorted = df.loc[np.array(spot_name).flatten()]
+    sorted_features_pca = df_sorted.values 
+    sorted_feature_name_array = np.array(spot_name) 
+
+    nbrs = NearestNeighbors(n_neighbors=n_neighbors + 1).fit(centers)
+    distances, indices = nbrs.kneighbors(centers)
+
+    N = centers.shape[0]
+    distance_threshold=3*r
+    adj_spatial = np.zeros((N, N), dtype=int)
+    for i in range(N):
+        for j in range(1, n_neighbors + 1):
+            neighbor = indices[i, j]
+            if distances[i, j] <= distance_threshold:
+                adj_spatial[i, neighbor] = 1
+                adj_spatial[neighbor, i] = 1
+
+    corr_thresholds = [-1, -0.1, 0.1, 0.3, 0.5]
+    for corr_threshold in corr_thresholds:
+        adj_filtered = np.zeros((N, N), dtype=int)
+        for i in range(N):
+            for j in range(i + 1, N):
+                if adj_spatial[i, j] == 1:
+                    corr, _ = pearsonr(sorted_features_pca[i], sorted_features_pca[j])
+                    if corr > corr_threshold:
+                        adj_filtered[i, j] = 1
+                        adj_filtered[j, i] = 1
+    
+        title = f"Spatial Neighbors + Feature Correlation > {corr_threshold}"
+        save_path = f'{sample_dir}/plot/filtered_graph_{corr_threshold}.pdf'
+        
+        draw_graph(
+            adj_filtered, 
+            centers, 
+            img, 
+            N,
+            title, 
+            edge_color='black',
+            save_path=save_path
+        )
+        
+        print(f"processing: corr_threshold = {corr_threshold} -> {save_path}")
+        
+
+import argparse
+import os
+import time
+from pathlib import Path
+
+def main():
     """
     Example run:
     Suppose your data is stored in /your sample dir/,
@@ -210,15 +284,27 @@ if __name__ == "__main__":
         - sample1/input/            stores local tile .npy files
         - sample1/resnet50/         stores extracted features (features.txt / features_pca.txt, etc.)
     """
-    # Modify this to your sample directory, must end with "/"
-    sample_dir = "/your sample dir/"  
-    r = 50   # Cropping radius for each spot, adjustable depending on the resolution
-
+    parser = argparse.ArgumentParser(description='Extract spatial features from tissue images')
+    parser.add_argument('--sample_dir', type=str, required=True,
+                       help='Sample directory containing tissue_hires_image.png, spot.txt, exp_location.txt')
+    parser.add_argument('--radius', '-r', type=int, default=50,
+                       help='Cropping radius for each spot (default: 50)')
+    
+    args = parser.parse_args()
+    
+    # Use pathlib for cross-platform path handling
+    sample_dir = Path(args.sample_dir)
+    r = args.radius
+    
     start_time = time.time()
-    get_pca_feature(sample_dir, r)
+    get_pca_feature(str(sample_dir), r)
     end_time = time.time()
-
+    
     print(f"✅ Feature extraction completed, elapsed time: {end_time - start_time:.2f} seconds")
-    print(f"Results saved in: {os.path.join(sample_dir, 'resnet50/')}")
+    # Use pathlib for path joining
+    results_path = sample_dir / "resnet50"
+    print(f"Results saved in: {results_path}")
 
+if __name__ == "__main__":
+    main()
 
