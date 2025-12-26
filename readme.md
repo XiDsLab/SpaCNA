@@ -22,6 +22,7 @@ SpaCNA requires both **R** and **Python** environments. It is highly recommended
       - `matplotlib`==3.5.3
       - `pandas`==1.3.5
       - `scikit-learn`==1.0.2
+      - `scipy`==1.10.1
 
 It is recommended to install the required packages using the provided `requirements.txt` file.
 
@@ -36,6 +37,7 @@ numpy==1.21.6
 pandas==1.3.5
 scikit-learn==1.0.2
 matplotlib==3.5.3
+scipy==1.10.1
 ```
 
 Install all dependencies with:
