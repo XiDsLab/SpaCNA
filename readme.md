@@ -124,7 +124,7 @@ This step uses a pre-trained ResNet50 model to extract morphological features fr
     ```
 
   * **Output:**
-    The script will automatically generate a `resnet50/` folder within your `sample_dir`, containing the extracted feature files, such as `features_pca.txt`.Additionally, a `plot/` folder will be created within your `sample_dir`, which contains graph images corresponding to different image thresholds.
+    The script will automatically generate a `resnet50/` folder within your `sample_dir`, containing the extracted feature files, such as `features_pca.txt`. Additionally, a `plot/` folder will be created within your `sample_dir`, which contains graph images corresponding to different image thresholds.
 
 ### Step 2: Run SpaCNA for CNA Detection
 
