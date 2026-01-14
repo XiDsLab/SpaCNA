@@ -13,31 +13,31 @@ SpaCNA requires both **R** and **Python** environments. It is highly recommended
 
 ### Python Environment
 
-  - **Python:** 3.7.9
+  - **Python:** 3.13.11
   - **Key Packages:**
-      - `torch`==1.13.1+cu117
-      - `torchvision`==0.14.1+cu117
-      - `opencv-python`==4.9.0
-      - `numpy`==1.21.6
-      - `matplotlib`==3.5.3
-      - `pandas`==1.3.5
-      - `scikit-learn`==1.0.2
-      - `scipy`==1.10.1
+      - `torch`==2.6.0+cu124
+      - `torchvision`==0.21.0+cu124
+      - `opencv-python`==4.12.0.88
+      - `numpy`==2.2.6
+      - `matplotlib`==3.10.8
+      - `pandas`==2.3.3
+      - `scikit-learn`==1.8.0
+      - `scipy`==1.16.3
 
 It is recommended to install the required packages using the provided `requirements.txt` file.
 
 **`requirements.txt`:**
 
 ```txt
-torch==1.13.1+cu117
-torchvision==0.14.1+cu117
---extra-index-url https://download.pytorch.org/whl/cu117
-opencv-python==4.9.0
-numpy==1.21.6
-pandas==1.3.5
-scikit-learn==1.0.2
-matplotlib==3.5.3
-scipy==1.10.1
+torch==2.6.0+cu124
+torchvision==0.21.0+cu124
+--extra-index-url https://download.pytorch.org/whl/cu124
+opencv-python==4.12.0.88
+numpy==2.2.6
+pandas==2.3.3
+scikit-learn==1.8.0
+matplotlib==3.10.8
+scipy==1.16.3
 ```
 
 Install all dependencies with:
@@ -60,6 +60,7 @@ pip install -r requirements.txt
       - `rootSolve` (1.8.2.3)
       - `patchwork` (1.1.2)
       - `glmnet` (4.1.8)
+      - `dlm` (1.1.6)
 
 You can install them by running the following commands in your R console. This script handles packages from both CRAN and Bioconductor.
 
@@ -71,7 +72,7 @@ if (!requireNamespace("BiocManager", quietly = TRUE))
 # Install packages from CRAN
 # For specific versions, you might need the 'remotes' package, e.g.:
 # remotes::install_version("Seurat", version = "4.2.0")
-install.packages(c("Seurat", "parallelDist", "irlba", "ggplot2", "rootSolve", "patchwork", "glmnet"))
+install.packages(c("Seurat", "parallelDist", "irlba", "ggplot2", "rootSolve", "patchwork", "glmnet","dlm"))
 
 # Install packages from Bioconductor
 BiocManager::install(c("biomaRt", "ComplexHeatmap", "edgeR"))
@@ -137,7 +138,7 @@ This core step integrates gene expression, spatial coordinates, and image featur
 
     ```terminal
 
-    Rscript SpaCNA.R --sample_dir="/your/sample/directory" --sample_dir="/your/image feature/directory" --plot_dir="/path/to/output" --normal_clusters="cluster1, cluster2"
+    Rscript SpaCNA.R --sample_dir="/your/sample/directory" --image_dir="/your/image feature/directory" --plot_dir="/path/to/output" --normal_clusters="1,2"
     ```
     * **Output:**
     The script will generate the CNA results and plots within your `image_dir`.

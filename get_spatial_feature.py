@@ -73,7 +73,7 @@ def get_pca_feature(sample_dir,r,n_neighbors = 6):
     mkdir(sample_dir+'/plot') 
     #### prepare data ####
     print("---  prepare data  ---")
-    spot= pd.read_csv(sample_dir+'/exp_location.txt',sep='\\s+',header=None)
+    # spot= pd.read_csv(sample_dir+'/exp_location.txt',sep='\\s+',header=None)
     spot_name= pd.read_csv(sample_dir+'/spot.txt',sep='\\s+',header=None)
     centers = np.loadtxt(sample_dir+"/exp_location.txt")
     img = cv2.imread(sample_dir+"/tissue_hires_image.png")
@@ -134,7 +134,8 @@ def get_pca_feature(sample_dir,r,n_neighbors = 6):
 
     mean /= nb_samples
     std /= nb_samples
-    
+    print(f"mean: {mean}")
+    print(f"std: {std}")
     
     #### construct dataloader ####
     sample_mean = mean

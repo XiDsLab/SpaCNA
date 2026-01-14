@@ -70,17 +70,39 @@ get_gene_pos <- function(gene_list){
   return(gene_pos)
 }
 
-get_spot_location <- function(seurat_obj, type="10X"){
-  if(type=="10X"){
-    spot_location <- seurat_obj@images[["slice1"]]@coordinates
-    spot_location <- spot_location[,c("imagerow","imagecol")]
-    names(spot_location) <- c("x","y")
-    return(spot_location)
-  }else{
-    spot_location <- seurat_obj@images[["image"]]@coordinates
-    spot_location <- spot_location[,c("x","y")]
-    return(spot_location)
-  }
+# get_spot_location <- function(seurat_obj, type="10X"){
+#   if(type=="10X"){
+#     spot_location <- seurat_obj@images[["slice1"]]@coordinates
+#     spot_location <- spot_location[,c("imagerow","imagecol")]
+#     names(spot_location) <- c("x","y")
+#     return(spot_location)
+#   }else{
+#     spot_location <- seurat_obj@images[["image"]]@coordinates
+#     spot_location <- spot_location[,c("x","y")]
+#     return(spot_location)
+#   }
+# }
+
+get_spot_location <- function(seurat_obj) {
+    spot_location <- GetTissueCoordinates(seurat_obj)
+    
+    if (all(c("x", "y") %in% colnames(spot_location))) {
+        result <- spot_location[, c("x", "y"), drop = FALSE]
+    } else if (all(c("imagerow", "imagecol") %in% colnames(spot_location))) {
+        result <- spot_location[, c("imagerow", "imagecol"), drop = FALSE]
+        colnames(result) <- c("x", "y")
+    } else if (all(c("row", "col") %in% colnames(spot_location))) {
+        result <- spot_location[, c("row", "col"), drop = FALSE]
+        colnames(result) <- c("x", "y")
+    } else {
+        if (ncol(spot_location) >= 2) {
+            result <- spot_location[, 1:2, drop = FALSE]
+            colnames(result) <- c("x", "y")
+        } else {
+            stop("cannot extract Coordinates")
+        }
+    }  
+    return(result)
 }
 
 view_distribution <- function(r, binwidth=0.020){
