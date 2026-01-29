@@ -160,6 +160,23 @@ SpaCNA <- function(sample_dir,
                                             dlm_dW=dlm_dW,
                                             alpha=c(0.5, 0.25, 0.25),
                                             gene_thre=2)
+    if(parameter_init[[1]][1]>0.85){
+        parameter_init <- estimate_hmrf_parameter(count_RNA=count_RNA,
+                                            normal_cells=normal_cells,
+                                            gene_pos=gene_pos,
+                                            bin=bin,
+                                            gene_normalize=F,
+                                            cnv_num=cnv_state_level,
+                                            num_cells=200,
+                                            tumor_perc=tumor_perc,
+                                            common_dispersion=0.1,
+                                            dropout_prob=0.1,
+                                            dlm_dV=dlm_dV,
+                                            dlm_dW=dlm_dW,
+                                            alpha=c(0.5, 0.25, 0.25),
+                                            gene_thre=2)
+
+    }
     saveRDS(parameter_init, file.path(plot_dir, "hrmf_para.rds"))
 
     ## cn state init
