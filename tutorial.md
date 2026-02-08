@@ -66,11 +66,59 @@ demo_data
     │   └── scalefactors_json.json
     └── filtered_feature_bc_matrix.h5
 ```
+Your can prepare your data like:
+```r
+data_dir <- "./demo_data/raw_data/"
+
+#### seurat ####
+obj <- Load10X_Spatial(data_dir)
+plot1 <- VlnPlot(obj, features = "nCount_Spatial", pt.size = 0.1) + NoLegend()
+plot2 <- SpatialFeaturePlot(obj, features = "nCount_Spatial") + theme(legend.position = "right")
+wrap_plots(plot1, plot2)
+
+obj <- SCTransform(obj, assay = "Spatial", verbose = FALSE)
+# SpatialFeaturePlot(obj, features = c("EPCAM", "KRT19"))
+
+obj <- RunPCA(obj, assay = "SCT", verbose = FALSE)
+obj <- FindNeighbors(obj, reduction = "pca", dims = 1:30)
+obj <- FindClusters(obj, verbose = FALSE)
+obj <- RunUMAP(obj, reduction = "pca", dims = 1:30)
+
+p1 <- DimPlot(obj, reduction = "umap", label = TRUE)
+p2 <- SpatialDimPlot(obj, label = TRUE, label.size = 3)
+p1 + p2
+sample_dir<-'./demo_data/process_data/'
+saveRDS(obj, paste0(sample_dir, "seurat_object.rds"))
+obj<-readRDS(paste0(sample_dir, "seurat_object.rds"))
+
+save_image_info<-function(obj,image_dir,type="10X"){
+  if(type=="10X"){
+    scalefactors<-obj@images$slice1@scale.factors$hires
+    coordinate<-obj@images$slice1@coordinates[4:5]*scalefactors
+    spot_name<-rownames(coordinate)
+  }else{
+    scalefactors<-obj@images$image@scale.factors$hires
+    coordinate<-obj@images$image@coordinates[4:5]*scalefactors
+    spot_name<-rownames(coordinate)
+  }
+  write.table (coordinate, file =paste0(image_dir, "exp_location.txt"), sep =" ", row.names =FALSE, col.names =FALSE, quote =TRUE)
+  write.table (spot_name, file =paste0(image_dir, "spot.txt"), sep =" ", row.names =FALSE, col.names =FALSE, quote =TRUE)
+  knn1<- FindNeighbors(as.matrix(coordinate), 
+                       k.param=2, 
+                       annoy.metric="manhattan", 
+                       return.neighbor=TRUE)
+  r<-1/2*Mode(knn1@nn.dist[c(1:nrow(coordinate)),-1])
+  
+  return(list(coordinate=coordinate,spot_name=spot_name,r=r))
+}
+image_dir<-'./demo_data/raw_data/spatial/'
+spatial_info<-save_image_info(obj,image_dir)
+```
 ## 3. Execute the Pipeline
 ### Step 1: Extract Image Features
 ```bash
 # Make sure environment is activated
-python get_spatial_feature.py --sample_dir "./demo_data/raw_data/spatial/" --radius 50
+python get_spatial_feature.py --sample_dir "./demo_data/raw_data/spatial/" --radius 13
 ```
 Verification: Check outputs were created:
 
@@ -85,7 +133,9 @@ Rscript SpaCNA.R \
     --sample_dir="./demo_data/process_data" \
     --image_dir="./demo_data/raw_data/spatial" \
     --plot_dir="./demo_data/result" \
-    --normal_clusters="1,2" \
+    --normal_clusters="1,4,5,6" \
+    --dlm_dV=0.1 \
+    --dlm_dW=0.0001 \
     --image_thre=0.2
 ```
 **Note:** Adjust --normal_clusters based on your specific data. Check your seurat_object.rds for cluster information. Adjust --image_thre based on plots generated from Step 1.
