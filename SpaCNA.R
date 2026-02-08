@@ -58,7 +58,8 @@ SpaCNA <- function(sample_dir,
                    tumor_perc=1,
                    update_gaussian=FALSE,
                    lambda=0.003,
-                   image_thre=0.2) {
+                   image_thre=0.2,
+                   zero_thre=0.95) {
     
     # Use file.path for cross-platform path handling
     sample_dir <- file.path(sample_dir, "")
@@ -69,11 +70,22 @@ SpaCNA <- function(sample_dir,
     obj <- readRDS(paste0(sample_dir,"seurat_object.rds"))
 
     ## inputs
-    count_RNA <- as.matrix(obj@assays$Spatial@counts)
+    # count_RNA <- as.matrix(obj@assays$Spatial@counts)
+    count_RNA <- tryCatch({
+    as.matrix(obj@assays$Spatial@counts)
+    }, error = function(e) {
+    tryCatch({
+        as.matrix(GetAssayData(obj, layer = "counts"))
+    }, error = function(e) {
+        as.matrix(GetAssayData(obj, slot = "counts"))
+    })
+    })
     # count_RNA <- as.matrix(obj@assays$Spatial@layers$counts) 
     # rownames(count_RNA) <- rownames(obj) 
     # colnames(count_RNA) <- colnames(obj) 
 
+    zero_prop <- rowSums(count_RNA == 0) / ncol(count_RNA)
+    count_RNA <- count_RNA[zero_prop < zero_thre, ]
     count_RNA <- count_RNA[rowMeans(count_RNA)>0.05, ]
     message("Input count matrix dimension: ", paste(dim(count_RNA), collapse=" x "))
 
