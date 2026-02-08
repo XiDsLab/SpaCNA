@@ -275,6 +275,7 @@ run_spacna_cli <- function() {
     normal_clusters <- c(0, 1, 3, 8)
     dlm_dV <- 0.1
     dlm_dW <- 0.001
+    lambda <- 0.003
     image_thre <- 0.2
     
     # Parse arguments
@@ -292,6 +293,8 @@ run_spacna_cli <- function() {
             dlm_dV <- as.numeric(sub("^--dlm_dV=", "", arg))
         } else if (grepl("^--dlm_dW=", arg)) {
             dlm_dW <- as.numeric(sub("^--dlm_dW=", "", arg))
+        } else if (grepl("^--lambda=", arg)) {
+            lambda <- as.numeric(sub("^--lambda=", "", arg))
         } else if (grepl("^--image_thre=", arg)) {
             image_thre <- as.numeric(sub("^--image_thre=", "", arg))
         }
@@ -309,6 +312,7 @@ run_spacna_cli <- function() {
                        normal_clusters = normal_clusters,
                        dlm_dV = dlm_dV,
                        dlm_dW = dlm_dW,
+                       lambda=lambda,
                        image_thre = image_thre)
     
     return(cna_list)
