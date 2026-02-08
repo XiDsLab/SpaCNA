@@ -27,6 +27,7 @@ estimate_tumor_edge<- function(sample_dir, spacna_dir, plot_dir, tumor_content_d
   sample_dir <- file.path(sample_dir, "")
   spacna_dir <- file.path(spacna_dir, "")
   plot_dir <- file.path(plot_dir, "")
+  if(!dir.exists(plot_dir)) dir.create(plot_dir, recursive = TRUE)
   tumor_content_dir <- file.path(tumor_content_dir, "")
 
   obj <- readRDS(file.path(sample_dir, "seurat_object.rds"))

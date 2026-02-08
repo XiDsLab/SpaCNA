@@ -47,7 +47,7 @@ source("./utils_codes/image_tools.R")
 SpaCNA <- function(sample_dir,
                    image_dir,
                    plot_dir,
-                   BICseq_dir='./code/MBICseq',
+                   BICseq_dir='./utils_codes/MBICseq',
                    bin_file='./data/bin_K=1e+06_hg38.RDS',
                    data_type="10X",
                    normal_clusters,
@@ -57,7 +57,9 @@ SpaCNA <- function(sample_dir,
                    beta_fixed = 5,
                    tumor_perc=1,
                    update_gaussian=FALSE,
-                   lambda=0.003) {
+                   lambda=0.003,
+                   image_thre=0.2,
+                   zero_thre=0.95) {
     
     # Use file.path for cross-platform path handling
     sample_dir <- file.path(sample_dir, "")
@@ -68,7 +70,22 @@ SpaCNA <- function(sample_dir,
     obj <- readRDS(paste0(sample_dir,"seurat_object.rds"))
 
     ## inputs
-    count_RNA <- as.matrix(obj@assays$Spatial@counts)
+    # count_RNA <- as.matrix(obj@assays$Spatial@counts)
+    count_RNA <- tryCatch({
+    as.matrix(obj@assays$Spatial@counts)
+    }, error = function(e) {
+    tryCatch({
+        as.matrix(GetAssayData(obj, layer = "counts"))
+    }, error = function(e) {
+        as.matrix(GetAssayData(obj, slot = "counts"))
+    })
+    })
+    # count_RNA <- as.matrix(obj@assays$Spatial@layers$counts) 
+    # rownames(count_RNA) <- rownames(obj) 
+    # colnames(count_RNA) <- colnames(obj) 
+
+    zero_prop <- rowSums(count_RNA == 0) / ncol(count_RNA)
+    count_RNA <- count_RNA[zero_prop < zero_thre, ]
     count_RNA <- count_RNA[rowMeans(count_RNA)>0.05, ]
     message("Input count matrix dimension: ", paste(dim(count_RNA), collapse=" x "))
 
@@ -76,7 +93,8 @@ SpaCNA <- function(sample_dir,
     cell_barcodes <- colnames(count_RNA)
     seurat_cluster <- as.numeric(obj$seurat_clusters)-1
     cluster <- as.character(seurat_cluster)
-    spot_location <- get_spot_location(obj,type=data_type)
+    # spot_location <- get_spot_location(obj,type=data_type)
+    spot_location <- get_spot_location(obj)
     normal_cells <- cell_barcodes[cluster %in% normal_clusters]
     cnv_state_level=length(state_ratio)
 
@@ -108,7 +126,7 @@ SpaCNA <- function(sample_dir,
     if (is_empty) {
         neigh_cell <- get_neigh_list_simple(spot_location, k=7)        
     } else {
-        neigh_cell <- get_final_neigh(image_dir, spot_location, k=7, thre=0.2, dist_thre='unknown')
+        neigh_cell <- get_final_neigh(image_dir, spot_location, k=7, thre=image_thre, dist_thre='unknown')
     }
     count_RNA_spa <- spatial_smooth(count_RNA_smooth,
                                     expr_neigh,
@@ -154,6 +172,23 @@ SpaCNA <- function(sample_dir,
                                             dlm_dW=dlm_dW,
                                             alpha=c(0.5, 0.25, 0.25),
                                             gene_thre=2)
+    if(parameter_init[[1]][1]>0.85){
+        parameter_init <- estimate_hmrf_parameter(count_RNA=count_RNA,
+                                            normal_cells=normal_cells,
+                                            gene_pos=gene_pos,
+                                            bin=bin,
+                                            gene_normalize=F,
+                                            cnv_num=cnv_state_level,
+                                            num_cells=200,
+                                            tumor_perc=tumor_perc,
+                                            common_dispersion=0.1,
+                                            dropout_prob=0.1,
+                                            dlm_dV=dlm_dV,
+                                            dlm_dW=dlm_dW,
+                                            alpha=c(0.5, 0.25, 0.25),
+                                            gene_thre=2)
+
+    }
     saveRDS(parameter_init, file.path(plot_dir, "hrmf_para.rds"))
 
     ## cn state init
@@ -240,6 +275,7 @@ run_spacna_cli <- function() {
     normal_clusters <- c(0, 1, 3, 8)
     dlm_dV <- 0.1
     dlm_dW <- 0.001
+    image_thre <- 0.2
     
     # Parse arguments
     for (arg in args) {
@@ -256,6 +292,8 @@ run_spacna_cli <- function() {
             dlm_dV <- as.numeric(sub("^--dlm_dV=", "", arg))
         } else if (grepl("^--dlm_dW=", arg)) {
             dlm_dW <- as.numeric(sub("^--dlm_dW=", "", arg))
+        } else if (grepl("^--image_thre=", arg)) {
+            image_thre <- as.numeric(sub("^--image_thre=", "", arg))
         }
     }
     
@@ -270,7 +308,8 @@ run_spacna_cli <- function() {
                        plot_dir = plot_dir,
                        normal_clusters = normal_clusters,
                        dlm_dV = dlm_dV,
-                       dlm_dW = dlm_dW)
+                       dlm_dW = dlm_dW,
+                       image_thre = image_thre)
     
     return(cna_list)
 }
@@ -290,5 +329,5 @@ if (FALSE) {
     # Run analysis
     cna_list <- SpaCNA(sample_dir, image_dir, plot_dir, 
                        normal_clusters = c(0, 1, 3, 8), 
-                       dlm_dV = 0.1, dlm_dW = 0.001)
+                       dlm_dV = 0.1, dlm_dW = 0.001,image_thre=0.2)
 }
