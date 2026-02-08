@@ -174,7 +174,9 @@ Rscript estimate_tumor_content.R \
 ls ./demo_data/results/     # Should contain CNA results and plots
 ```
 Your results should contain: spacna_tumor_content.png and tumor_content_df.rds
-<img src="demo_data/result/spacna_tumor_content.png" alt="spacna_tumor_content" width="400px" />
+| Tumor Content |
+|------------------------|
+| <img src="demo_data/result/spacna_tumor_content.png" alt="spacna_tumor_content" width="400" /> |
 
 ### Step 4: Detect Tumor Edge (Optional)
 
