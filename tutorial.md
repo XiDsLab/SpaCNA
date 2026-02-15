@@ -313,7 +313,7 @@ Your results should contain:
 ```txt
 demo_data/
 └── result/                          
-    ├── sspacna_edge.png              # Image showing tumor edge score
+    ├── spacna_edge.png              # Image showing tumor edge score
     └── spacna_edge_score.png         # Image showing tumor edge 
 ```
 
